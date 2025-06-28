@@ -35,15 +35,110 @@ class Entity:
         return collision
 
 
+class Bullet(Entity):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        sprite: str,
+        direction: int = 0,
+    ) -> None:
+        super().__init__(x, y, width, height, sprite)
+        self.direction = direction
+        self.speed = 10
+        self.lifetime = 100
+
+    def update(self) -> None:
+        """Update the bullet's position based on its speed and direction."""
+        angle_rad = math.radians(self.direction)
+        self.x += self.speed * math.cos(angle_rad)
+        self.y -= self.speed * math.sin(angle_rad)
+        self.collision_rect.topleft = (int(self.x), int(self.y))
+
+        # Decrease lifetime
+        self.lifetime -= 1
+
+    def draw(self, screen: pygame.Surface) -> None:
+        """Draw the bullet on the screen."""
+        sprite_image = pygame.image.load(self.sprite)
+        sprite_image = pygame.transform.scale(sprite_image, (self.width, self.height))
+        rotated_image = pygame.transform.rotate(sprite_image, self.direction)
+        rotated_rect = rotated_image.get_rect(
+            center=(self.x + self.width // 2, self.y + self.height // 2)
+        )
+
+        # Set the collision rectangle to the rotated position
+        self.collision_rect = rotated_rect
+
+        # Show the collision rectangle in debug mode
+        if self.debug_mode:
+            pygame.draw.rect(screen, (255, 0, 0), self.collision_rect, 1)
+
+        # Draw the rotated sprite on the screen
+        screen.blit(rotated_image, rotated_rect.topleft)
+
+    def is_dead(self):
+        if self.lifetime < 1:
+            return True
+        else:
+            return False
+
+    def __repr__(self) -> str:
+        return f"Bullet(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', direction={self.direction})"
+
+
+class BulletsManager:
+    def __init__(self) -> None:
+        self.bullets: list[Bullet] = []
+
+    def draw(self, surface: pygame.Surface):
+        for bullet in self.bullets:
+            bullet.draw(surface)
+
+    def delete(self, bullet: Bullet):
+        self.bullets.remove(bullet)
+
+    def update(self):
+        for bullet in self.bullets:
+            bullet.update()
+
+        for bullet in self.bullets:
+            if bullet.is_dead():
+                self.delete(bullet)
+
+    def shoot(self, x, y, width, height, sprite, direction=0):
+        self.bullets.append(Bullet(x, y, width, height, sprite, direction))
+
+    def get_bullets(self):
+        return self.bullets
+
+
 class Player(Entity):
-    def __init__(self, x: int, y: int, width: int, height: int, sprite: str) -> None:
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        sprite: str,
+        bullet_manager: BulletsManager,
+    ) -> None:
         super().__init__(x, y, width, height, sprite)
         self.health = 100
         self.speed = 5
         self.direction = 0
         self.momentum_x = 0
         self.momentum_y = 0
-        self.acceleration = 0.2
+        self.acceleration = 0.1
+
+        # Cooldown for shooting
+        self.shoot_cooldown = 0
+        self.shoot_delay = 10
+
+        # Bullet manager
+        self.bullet_manager = bullet_manager
 
     def update(self) -> None:
         # Additional player-specific update logic can go here
@@ -52,6 +147,15 @@ class Player(Entity):
 
         self.momentum_x *= 0.99
         self.momentum_y *= 0.99
+
+        # Update the collision rectangle
+        self.collision_rect.topleft = (int(self.x), int(self.y))
+
+        if self.shoot_cooldown > 0:
+            self.shoot_cooldown -= 1
+
+        # bullet manager update
+        self.bullet_manager.update()
 
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the player on the screen."""
@@ -73,6 +177,8 @@ class Player(Entity):
 
         # Draw the rotated sprite on the screen
         screen.blit(rotated_image, rotated_rect.topleft)
+        # Bullet manager draw
+        self.bullet_manager.draw(screen)
 
     def handle_input(self, keys: pygame.key.ScancodeWrapper) -> None:
         """Handle player input for movement and actions."""
@@ -86,6 +192,25 @@ class Player(Entity):
             angle_rad = math.radians(self.direction + 90)
             self.momentum_x += self.acceleration * math.cos(angle_rad)
             self.momentum_y -= self.acceleration * math.sin(angle_rad)
+
+        if keys[pygame.K_SPACE]:
+            self.shoot()
+
+    def shoot(self):
+        if self.shoot_cooldown > 0:
+            return
+
+        # shoot from the center of the player in x and tip of the player in y
+        self.bullet_manager.shoot(
+            self.x + self.width // 2,
+            self.y + self.height // 2,
+            5,
+            5,
+            "./assets/bullet_player.png",
+            direction=self.direction + 90,
+        )
+
+        self.shoot_cooldown = self.shoot_delay
 
     def take_damage(self, amount: int) -> None:
         """Reduce player health by the specified amount."""

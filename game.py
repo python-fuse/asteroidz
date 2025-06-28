@@ -1,7 +1,7 @@
 import sys
 import pygame
 
-from entities import Player
+from entities import BulletsManager, Player
 from utils.constants import WINDOW_HEIGHT, WINDOW_WIDTH
 
 pygame.init()
@@ -15,10 +15,16 @@ class Game:
         self.clock = pygame.time.Clock()
         self.fps = 60
         self.is_running = True
+        self.player_bullet_manager = BulletsManager()
 
         # Create the entities
         self.player = Player(
-            WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2, 50, 70, "./assets/player.png"
+            WINDOW_WIDTH // 2,
+            WINDOW_HEIGHT // 2,
+            50,
+            70,
+            "./assets/player.png",
+            self.player_bullet_manager,
         )
 
     def handle_events(self):
@@ -51,3 +57,5 @@ class Game:
 
             pygame.display.flip()
             self.clock.tick(self.fps)
+
+            print(f"FPS: {self.clock.get_fps():.2f}")
