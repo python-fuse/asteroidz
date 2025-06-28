@@ -1,3 +1,4 @@
+import math
 import pygame
 
 
@@ -9,6 +10,7 @@ class Entity:
         self.height = height
         self.sprite = sprite
         self.collision_rect = pygame.Rect(x, y, width, height)
+        self.debug_mode = False  # Flag for debug mode
 
     def __repr__(self) -> str:
         return f"Entity(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}')"
@@ -23,7 +25,7 @@ class Entity:
     def update(self) -> None:
         # Placeholder for update logic
         # Override this method in subclasses to implement actual update behavior
-        print(f"Updating {self.sprite}")
+        self.collision_rect.topleft = (self.x, self.y)
 
     def check_collision(self, other: "Entity") -> bool:
         """Check if this entity collides with another entity."""
@@ -38,34 +40,52 @@ class Player(Entity):
         super().__init__(x, y, width, height, sprite)
         self.health = 100
         self.speed = 5
-
-    def __repr__(self) -> str:
-        return f"Player(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', health={self.health})"
+        self.direction = 0
+        self.momentum_x = 0
+        self.momentum_y = 0
+        self.acceleration = 0.2
 
     def update(self) -> None:
         # Additional player-specific update logic can go here
-        pass
+        self.x += self.momentum_x
+        self.y += self.momentum_y
+
+        self.momentum_x *= 0.99
+        self.momentum_y *= 0.99
 
     def draw(self, screen: pygame.Surface) -> None:
-        sprite_surface = pygame.image.load(self.sprite)
-        sprite_surface = pygame.transform.scale(
-            sprite_surface, (self.width, self.height)
+        """Draw the player on the screen."""
+
+        # Center the sprite on its position
+        sprite_image = pygame.image.load(self.sprite)
+        sprite_image = pygame.transform.scale(sprite_image, (self.width, self.height))
+        rotated_image = pygame.transform.rotate(sprite_image, self.direction)
+        rotated_rect = rotated_image.get_rect(
+            center=(self.x + self.width // 2, self.y + self.height // 2)
         )
-        screen.blit(sprite_surface, (self.x, self.y))
+
+        # Set the collision rectangle to the rotated position
+        self.collision_rect = rotated_rect
+
+        # Show the collision rectangle in debug mode
+        if self.debug_mode:
+            pygame.draw.rect(screen, (255, 0, 0), self.collision_rect, 1)
+
+        # Draw the rotated sprite on the screen
+        screen.blit(rotated_image, rotated_rect.topleft)
 
     def handle_input(self, keys: pygame.key.ScancodeWrapper) -> None:
         """Handle player input for movement and actions."""
         if keys[pygame.K_LEFT]:
-            self.x -= self.speed
+            self.direction += self.speed
         if keys[pygame.K_RIGHT]:
-            self.x += self.speed
-        if keys[pygame.K_UP]:
-            self.y -= self.speed
-        if keys[pygame.K_DOWN]:
-            self.y += self.speed
+            self.direction -= self.speed
 
-        # Update the collision rectangle position
-        self.collision_rect.topleft = (self.x, self.y)
+        # Accelerate in the direction the player is facing
+        if keys[pygame.K_UP]:
+            angle_rad = math.radians(self.direction + 90)
+            self.momentum_x += self.acceleration * math.cos(angle_rad)
+            self.momentum_y -= self.acceleration * math.sin(angle_rad)
 
     def take_damage(self, amount: int) -> None:
         """Reduce player health by the specified amount."""
@@ -74,39 +94,5 @@ class Player(Entity):
             self.health = 0
         print(f"{self.sprite} took {amount} damage, health is now {self.health}")
 
-
-class Enemy(Entity):
-    def __init__(self, x: int, y: int, width: int, height: int, sprite: str) -> None:
-        super().__init__(x, y, width, height, sprite)
-        self.damage = 10
-
     def __repr__(self) -> str:
-        return f"Enemy(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', damage={self.damage})"
-
-    def update(self) -> None:
-        # Additional enemy-specific update logic can go here
-        pass
-
-    def draw(self, screen: pygame.Surface) -> None:
-        # Additional enemy-specific drawing logic can go here
-        pass
-
-
-class Bullet(Entity):
-    def __init__(
-        self, x: int, y: int, width: int, height: int, sprite: str, speed: int
-    ) -> None:
-        super().__init__(x, y, width, height, sprite)
-        self.speed = speed
-
-    def __repr__(self) -> str:
-        return f"Bullet(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', speed={self.speed})"
-
-    def update(self) -> None:
-        # Move the bullet in a specific direction
-        self.x += self.speed
-        self.collision_rect.topleft = (self.x, self.y)
-        print(f"Bullet moved to ({self.x}, {self.y}) with speed {self.speed}")
-
-    def draw(self, screen: pygame.Surface) -> None:
-        pass
+        return f"Player(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', health={self.health})"

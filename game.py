@@ -17,7 +17,9 @@ class Game:
         self.is_running = True
 
         # Create the entities
-        self.player = Player(100, 100, 50, 70, "./assets/player.png")
+        self.player = Player(
+            WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2, 50, 70, "./assets/player.png"
+        )
 
     def handle_events(self):
         for event in pygame.event.get():
