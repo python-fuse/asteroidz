@@ -2,7 +2,13 @@ import math
 import random
 import pygame
 
-from utils.constants import WINDOW_HEIGHT, WINDOW_WIDTH
+from utils.constants import (
+    EXPLOSION_SOUND,
+    ASTEROID_SCORE_UP_EVENT,
+    SHOOT_SOUND,
+    WINDOW_HEIGHT,
+    WINDOW_WIDTH,
+)
 
 
 class Entity:
@@ -52,6 +58,7 @@ class Bullet(Entity):
         self.direction = direction
         self.speed = 10
         self.lifetime = 100
+        self.debug_mode = False
 
     def update(self) -> None:
         """Update the bullet's position based on its speed and direction."""
@@ -130,7 +137,7 @@ class Player(Entity):
     ) -> None:
         super().__init__(x, y, width, height, sprite)
         self.health = 100
-        self.speed = 5
+        self.rotation_speed = 4
         self.direction = 0
         self.momentum_x = 0
         self.momentum_y = 0
@@ -186,9 +193,9 @@ class Player(Entity):
     def handle_input(self, keys: pygame.key.ScancodeWrapper) -> None:
         """Handle player input for movement and actions."""
         if keys[pygame.K_LEFT]:
-            self.direction += self.speed
+            self.direction += self.rotation_speed
         if keys[pygame.K_RIGHT]:
-            self.direction -= self.speed
+            self.direction -= self.rotation_speed
 
         # Accelerate in the direction the player is facing
         if keys[pygame.K_UP]:
@@ -219,6 +226,8 @@ class Player(Entity):
             direction=self.direction + 90,
         )
 
+        SHOOT_SOUND.play()
+
         self.shoot_cooldown = self.shoot_delay
 
     def take_damage(self, amount: int) -> None:
@@ -234,15 +243,25 @@ class Player(Entity):
 
 class Asteroid(Entity):
     def __init__(
-        self, x: int, y: int, width: int, height: int, sprite: str, direction: int
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        sprite: str,
+        direction: int,
+        debug=False,
     ) -> None:
         super().__init__(x, y, width, height, sprite)
-        self.speed = 2
+        self.speed = 3
         self.direction = math.radians(direction)
+        self.debug_mode = debug
 
     def move(self):
         self.x += self.speed * math.cos(self.direction)
         self.y -= self.speed * math.cos(self.direction)
+
+        self.collision_rect.topleft = (int(self.x), int(self.y))
 
     def update(self) -> None:
         self.move()
@@ -252,15 +271,24 @@ class Asteroid(Entity):
             pygame.image.load(self.sprite), (self.width, self.height)
         )
 
+        if self.debug_mode:
+            pygame.draw.rect(screen, (255, 0, 0), self.collision_rect)
+
         screen.blit(sprite_image, (self.x, self.y))
+
+    def check_collision(self, other: Entity) -> bool:
+        """Check if this asteroid collides with another entity."""
+        collision = self.collision_rect.colliderect(other.collision_rect)
+        return collision
 
     def __repr__(self) -> str:
         return f"Asteroid(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}')"
 
 
 class AsteroidManager:
-    def __init__(self) -> None:
+    def __init__(self, bullets_manager: BulletsManager) -> None:
         self.asteroids: list[Asteroid] = []
+        self.bullets = bullets_manager.get_bullets()
 
     def draw(self, surface: pygame.Surface):
         for bullet in self.asteroids:
@@ -273,12 +301,15 @@ class AsteroidManager:
         for asteroid in self.asteroids:
             asteroid.update()
             if (
-                asteroid.x < 0
+                asteroid.x < 0 - asteroid.width
                 or asteroid.x > WINDOW_WIDTH
-                or asteroid.y < 0
+                or asteroid.y < 0 - asteroid.height
                 or asteroid.y > WINDOW_HEIGHT
             ):
                 self.destroy(asteroid)
+
+        for bullet in self.bullets:
+            self.check_collisions(bullet)
 
     def destroy(self, asteroid: Asteroid):
         """Remove an asteroid from the list."""
@@ -303,3 +334,15 @@ class AsteroidManager:
 
     def get_asteroids(self):
         return self.asteroids
+
+    def check_collisions(self, entity: Entity) -> None:
+        """Check for collisions with the given entity and return a list of colliding asteroids."""
+        for asteroid in self.asteroids:
+            if asteroid.check_collision(entity):
+                if isinstance(entity, Bullet):
+                    EXPLOSION_SOUND.play()
+                    self.delete(asteroid)
+                    pygame.event.post(ASTEROID_SCORE_UP_EVENT)
+
+    def __repr__(self) -> str:
+        return f"AsteroidManager(asteroids={self.asteroids})"
