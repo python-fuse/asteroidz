@@ -253,9 +253,11 @@ class Asteroid(Entity):
         debug=False,
     ) -> None:
         super().__init__(x, y, width, height, sprite)
-        self.speed = 3
+        self.speed = 2
         self.direction = math.radians(direction)
         self.debug_mode = debug
+        self.exploded = False
+        self.explosion_timer = 10
 
     def move(self):
         self.x += self.speed * math.cos(self.direction)
@@ -266,9 +268,16 @@ class Asteroid(Entity):
     def update(self) -> None:
         self.move()
 
+    def explode(self):
+        self.exploded = True
+
     def draw(self, screen: pygame.Surface) -> None:
+        sprite_to_render = (
+            self.sprite if self.exploded == False else "assets/explosion.png"
+        )
+
         sprite_image = pygame.transform.scale(
-            pygame.image.load(self.sprite), (self.width, self.height)
+            pygame.image.load(sprite_to_render), (self.width, self.height)
         )
 
         if self.debug_mode:
@@ -307,6 +316,10 @@ class AsteroidManager:
                 or asteroid.y > WINDOW_HEIGHT
             ):
                 self.destroy(asteroid)
+            if asteroid.exploded:
+                asteroid.explosion_timer -= 1
+                if asteroid.explosion_timer < 1:
+                    self.destroy(asteroid)
 
         for bullet in self.bullets:
             self.check_collisions(bullet)
@@ -341,7 +354,9 @@ class AsteroidManager:
             if asteroid.check_collision(entity):
                 if isinstance(entity, Bullet):
                     EXPLOSION_SOUND.play()
-                    self.delete(asteroid)
+                    asteroid.explode()
+                    entity.lifetime = 0
+
                     pygame.event.post(ASTEROID_SCORE_UP_EVENT)
 
     def __repr__(self) -> str:
