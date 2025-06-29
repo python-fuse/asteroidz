@@ -192,9 +192,15 @@ class Player(Entity):
 
         # Accelerate in the direction the player is facing
         if keys[pygame.K_UP]:
-            angle_rad = math.radians(self.direction + 90)
-            self.momentum_x += self.acceleration * math.cos(angle_rad)
-            self.momentum_y -= self.acceleration * math.sin(angle_rad)
+            max_speed = 10
+            if self.momentum_x**2 + self.momentum_y**2 < max_speed**2:
+                angle_rad = math.radians(self.direction + 90)
+                self.momentum_x += self.acceleration * math.cos(angle_rad)
+                self.momentum_y -= self.acceleration * math.sin(angle_rad)
+
+            # angle_rad = math.radians(self.direction + 90)
+            # self.momentum_x += self.acceleration * math.cos(angle_rad)
+            # self.momentum_y -= self.acceleration * math.sin(angle_rad)
 
         if keys[pygame.K_SPACE]:
             self.shoot()
