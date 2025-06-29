@@ -29,9 +29,8 @@ class Game:
         pygame.time.set_timer(SPAWN_ASTEROID, SPAND_ASTEROID_DELAY)
 
         # Managers
-        self.player_bullet_manager = BulletsManager()
-        self.asteroids_manager = AsteroidManager(self.player_bullet_manager)
 
+        self.player_bullet_manager = BulletsManager()
         # Create the entities
         self.player = Player(
             WINDOW_WIDTH // 2,
@@ -40,6 +39,10 @@ class Game:
             60,
             "./assets/player.png",
             self.player_bullet_manager,
+        )
+
+        self.asteroids_manager = AsteroidManager(
+            self.player_bullet_manager, self.player
         )
 
         # Game run conditions
@@ -65,6 +68,12 @@ class Game:
         keys = pygame.key.get_pressed()
         self.player.handle_input(keys)
 
+    def draw_game_over(self):
+        game_over_surface = self.score_font.render("Game Over", True, (255, 0, 0))
+        self.window.blit(
+            game_over_surface, (WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2)
+        )
+
     def draw(self):
         self.window.fill((0, 0, 0))
 
@@ -77,6 +86,20 @@ class Game:
 
         # Draw asteroids
         self.asteroids_manager.draw(self.window)
+
+        # Draw player lives icon
+        if self.player.lives <= 0:
+            self.game_over = True
+            self.draw_game_over()
+            return
+
+        for i in range(self.player.lives):
+            life_icon = pygame.transform.grayscale(
+                (pygame.image.load("./assets/player.png"))
+            )
+
+            life_icon = pygame.transform.scale(life_icon, (20, 30))
+            self.window.blit(life_icon, (10 + i * 35, 110))
 
     def update(self):
         self.draw()

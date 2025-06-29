@@ -136,7 +136,7 @@ class Player(Entity):
         bullet_manager: BulletsManager,
     ) -> None:
         super().__init__(x, y, width, height, sprite)
-        self.health = 100
+        self.lives = 3
         self.rotation_speed = 4
         self.direction = 0
         self.momentum_x = 0
@@ -230,15 +230,24 @@ class Player(Entity):
 
         self.shoot_cooldown = self.shoot_delay
 
-    def take_damage(self, amount: int) -> None:
-        """Reduce player health by the specified amount."""
-        self.health -= amount
-        if self.health < 0:
-            self.health = 0
-        print(f"{self.sprite} took {amount} damage, health is now {self.health}")
+    def reset_position(self) -> None:
+        self.x = WINDOW_HEIGHT // 2
+        self.y = WINDOW_HEIGHT // 2
+
+    def blip(self):
+        pass
+
+    def take_damage(self) -> None:
+        """Check player's lives and take action"""
+        if self.lives < 1:
+            print("Dead")
+        else:
+            # Reset player position to the center of the screen
+            self.reset_position()
+            self.blip()
 
     def __repr__(self) -> str:
-        return f"Player(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', health={self.health})"
+        return f"Player(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', health={self.lives})"
 
 
 class Asteroid(Entity):
@@ -295,9 +304,10 @@ class Asteroid(Entity):
 
 
 class AsteroidManager:
-    def __init__(self, bullets_manager: BulletsManager) -> None:
+    def __init__(self, bullets_manager: BulletsManager, player: Player) -> None:
         self.asteroids: list[Asteroid] = []
         self.bullets = bullets_manager.get_bullets()
+        self.player = player
 
     def draw(self, surface: pygame.Surface):
         for bullet in self.asteroids:
@@ -323,6 +333,8 @@ class AsteroidManager:
 
         for bullet in self.bullets:
             self.check_collisions(bullet)
+
+        self.check_collisions(self.player)
 
     def destroy(self, asteroid: Asteroid):
         """Remove an asteroid from the list."""
@@ -358,6 +370,10 @@ class AsteroidManager:
                     entity.lifetime = 0
 
                     pygame.event.post(ASTEROID_SCORE_UP_EVENT)
+
+                if isinstance(entity, Player):
+                    entity.lives -= 1
+                    entity.take_damage()
 
     def __repr__(self) -> str:
         return f"AsteroidManager(asteroids={self.asteroids})"
