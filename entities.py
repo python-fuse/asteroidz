@@ -1,5 +1,8 @@
 import math
+import random
 import pygame
+
+from utils.constants import WINDOW_HEIGHT, WINDOW_WIDTH
 
 
 class Entity:
@@ -221,3 +224,76 @@ class Player(Entity):
 
     def __repr__(self) -> str:
         return f"Player(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', health={self.health})"
+
+
+class Asteroid(Entity):
+    def __init__(
+        self, x: int, y: int, width: int, height: int, sprite: str, direction: int
+    ) -> None:
+        super().__init__(x, y, width, height, sprite)
+        self.speed = 2
+        self.direction = math.radians(direction)
+
+    def move(self):
+        self.x += self.speed * math.cos(self.direction)
+        self.y -= self.speed * math.cos(self.direction)
+
+    def update(self) -> None:
+        self.move()
+
+    def draw(self, screen: pygame.Surface) -> None:
+        sprite_image = pygame.transform.scale(
+            pygame.image.load(self.sprite), (self.width, self.height)
+        )
+
+        screen.blit(sprite_image, (self.x, self.y))
+
+    def __repr__(self) -> str:
+        return f"Asteroid(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}')"
+
+
+class AsteroidManager:
+    def __init__(self) -> None:
+        self.asteroids: list[Asteroid] = []
+
+    def draw(self, surface: pygame.Surface):
+        for bullet in self.asteroids:
+            bullet.draw(surface)
+
+    def delete(self, asteroid: Asteroid):
+        self.asteroids.remove(asteroid)
+
+    def update(self):
+        for asteroid in self.asteroids:
+            asteroid.update()
+            if (
+                asteroid.x < 0
+                or asteroid.x > WINDOW_WIDTH
+                or asteroid.y < 0
+                or asteroid.y > WINDOW_HEIGHT
+            ):
+                self.destroy(asteroid)
+
+    def destroy(self, asteroid: Asteroid):
+        """Remove an asteroid from the list."""
+        self.asteroids.remove(asteroid)
+
+    def spawn(self, player: Player):
+        """Spawn a new asteroid at a random position."""
+
+        rand_x = random.randint(0, WINDOW_WIDTH - 20)
+        rand_y = random.randint(0, WINDOW_HEIGHT - 20)
+        rand_direction = random.randint(0, 360)
+
+        # Spawn a new asteroid at a random position
+        # Ensure it does not spawn on the player
+        while abs(rand_x - player.x) < 50 and abs(rand_y - player.y) < 50:
+            rand_x = random.randint(0, WINDOW_WIDTH - 20)
+            rand_y = random.randint(0, WINDOW_HEIGHT - 20)
+
+        self.asteroids.append(
+            Asteroid(rand_x, rand_y, 70, 70, "./assets/asteroid1.png", rand_direction)
+        )
+
+    def get_asteroids(self):
+        return self.asteroids
