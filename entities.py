@@ -134,6 +134,7 @@ class Player(Entity):
         height: int,
         sprite: str,
         bullet_manager: BulletsManager,
+        debug_mode: bool = False,
     ) -> None:
         super().__init__(x, y, width, height, sprite)
         self.lives = 3
@@ -142,6 +143,7 @@ class Player(Entity):
         self.momentum_x = 0
         self.momentum_y = 0
         self.acceleration = 0.1
+        self.debug_mode = debug_mode
 
         # Cooldown for shooting
         self.shoot_cooldown = 0
@@ -234,6 +236,10 @@ class Player(Entity):
         self.x = WINDOW_HEIGHT // 2
         self.y = WINDOW_HEIGHT // 2
 
+        self.momentum_x = 0
+        self.momentum_y = 0
+        self.direction = 0
+
     def blip(self):
         pass
 
@@ -243,6 +249,7 @@ class Player(Entity):
             print("Dead")
         else:
             # Reset player position to the center of the screen
+            self.lives -= 1
             self.reset_position()
             self.blip()
 
@@ -260,6 +267,7 @@ class Asteroid(Entity):
         sprite: str,
         direction: int,
         debug=False,
+        type="normal",
     ) -> None:
         super().__init__(x, y, width, height, sprite)
         self.speed = 2
@@ -267,11 +275,21 @@ class Asteroid(Entity):
         self.debug_mode = debug
         self.exploded = False
         self.explosion_timer = 10
+        self.type = type
 
     def move(self):
-        self.x += self.speed * math.cos(self.direction)
-        self.y -= self.speed * math.cos(self.direction)
+        # self.x += self.speed * math.cos(self.direction)
+        # self.y -= self.speed * math.cos(self.direction)
 
+        # same speed but in the direction of the angle
+        self.x += self.speed * math.cos(self.direction)
+        self.y -= self.speed * math.sin(self.direction)
+
+        # Update the collision rectangle position
+        self.collision_rect.width = self.width
+        self.collision_rect.height = self.height
+        # Update the collision rectangle position to match the entity's position
+        # This ensures that the collision rectangle is always in sync with the entity's position
         self.collision_rect.topleft = (int(self.x), int(self.y))
 
     def update(self) -> None:
@@ -369,10 +387,33 @@ class AsteroidManager:
                     asteroid.explode()
                     entity.lifetime = 0
 
+                    if asteroid.type == "normal":
+                        self.asteroids.extend(
+                            [
+                                Asteroid(
+                                    asteroid.x,
+                                    asteroid.y,
+                                    30,
+                                    30,
+                                    "./assets/asteroid2.png",
+                                    random.randint(0, 360),
+                                    type="small",
+                                ),
+                                Asteroid(
+                                    asteroid.x,
+                                    asteroid.y,
+                                    30,
+                                    30,
+                                    "./assets/asteroid2.png",
+                                    random.randint(0, 360),
+                                    type="small",
+                                ),
+                            ]
+                        )
+
                     pygame.event.post(ASTEROID_SCORE_UP_EVENT)
 
                 if isinstance(entity, Player):
-                    entity.lives -= 1
                     entity.take_damage()
 
     def __repr__(self) -> str:
