@@ -56,7 +56,7 @@ class Game:
         self.retry_button = Button(
             "Retry",
             WINDOW_WIDTH // 2 - 50,
-            WINDOW_HEIGHT // 2 + 50,
+            WINDOW_HEIGHT // 2 + 100,
             100,
             50,
             self.score_font,
@@ -98,7 +98,7 @@ class Game:
         game_over_text_surface = self.score_font.render("Game Over", True, (255, 0, 0))
 
         game_over_rect = game_over_text_surface.get_rect(
-            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4)
         )
 
         # Draw score
@@ -107,7 +107,7 @@ class Game:
         )
 
         score_rect = score_surface.get_rect(
-            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4)
+            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 + 70)
         )
 
         game_over_screen.blit(score_surface, score_rect)
@@ -115,6 +115,28 @@ class Game:
         self.retry_button.draw(game_over_screen)
         game_over_screen.blit(game_over_text_surface, game_over_rect)
         self.window.blit(game_over_screen, (0, 0))
+
+        # Save high scores
+        high_score = self.load_high_score()
+        if self.score > high_score:
+            self.save_high_score(self.score)
+            high_score_text = self.score_font.render(
+                "New High Score!", True, (255, 255, 0)
+            )
+            high_score_rect = high_score_text.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 + 140)
+            )
+
+            self.window.blit(high_score_text, high_score_rect)
+        else:
+            high_score_text = self.score_font.render(
+                f"High Score: {high_score}", True, (255, 255, 0)
+            )
+            high_score_rect = high_score_text.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 + 140)
+            )
+
+            self.window.blit(high_score_text, high_score_rect)
 
     def draw(self):
         self.window.fill((0, 0, 0))
@@ -158,6 +180,18 @@ class Game:
             or self.player.y > WINDOW_HEIGHT + 100
         ):
             self.player.take_damage()
+
+    def load_high_score(self):
+        """Load single high score from a file."""
+        with open("high_score.txt", "a+") as file:
+            try:
+                return int(file.read().strip())
+            except ValueError:
+                return 0
+
+    def save_high_score(self, score):
+        with open("high_score.txt", "w") as file:
+            file.write(f"{score}\n")
 
     def run(self):
         while self.is_running:

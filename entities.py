@@ -108,7 +108,9 @@ class BulletsManager:
             bullet.draw(surface)
 
     def delete(self, bullet: Bullet):
-        self.bullets.remove(bullet)
+        """Remove a bullet from the list."""
+        if bullet in self.bullets:
+            self.bullets.remove(bullet)
 
     def update(self):
         for bullet in self.bullets:
@@ -332,7 +334,10 @@ class AsteroidManager:
             bullet.draw(surface)
 
     def delete(self, asteroid: Asteroid):
-        self.asteroids.remove(asteroid)
+        try:
+            self.asteroids.remove(asteroid)
+        except ValueError:
+            print(f"Asteroid {asteroid} not found in the list.")
 
     def update(self):
         for asteroid in self.asteroids:
@@ -356,7 +361,8 @@ class AsteroidManager:
 
     def destroy(self, asteroid: Asteroid):
         """Remove an asteroid from the list."""
-        self.asteroids.remove(asteroid)
+        if asteroid in self.asteroids:
+            self.asteroids.remove(asteroid)
 
     def spawn(self, player: Player):
         """Spawn a new asteroid at a random position."""
