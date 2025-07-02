@@ -183,10 +183,11 @@ class Game:
 
     def load_high_score(self):
         """Load single high score from a file."""
-        with open("high_score.txt", "a+") as file:
+        with open("high_score.txt", "r") as file:
             try:
                 return int(file.read().strip())
-            except ValueError:
+            except ValueError as e:
+                print(e)
                 return 0
 
     def save_high_score(self, score):
