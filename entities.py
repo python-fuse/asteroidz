@@ -147,6 +147,9 @@ class Player(Entity):
         self.acceleration = 0.1
         self.debug_mode = debug_mode
 
+        # Player surface
+        self.surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
         # Cooldown for shooting
         self.shoot_cooldown = 0
         self.shoot_delay = 10
@@ -154,7 +157,30 @@ class Player(Entity):
         # Bullet manager
         self.bullet_manager = bullet_manager
 
+        # Invincibility timer
+        self.invincibility_duration = 60 * 3
+        self.invincibility_timer = 0
+        self.is_invincible = False
+
+        # Blink logic
+        self.blink_timer = 0
+        self.blink_interval = 5
+        self.blink_visible = True
+
     def update(self) -> None:
+        """Update the player's position and handle movement."""
+        if self.invincibility_timer > 0:
+            self.invincibility_timer -= 1
+            self.blink_timer += 1
+
+            if self.blink_timer >= self.blink_interval:
+                self.blink_timer = 0
+                self.blink_visible = not self.blink_visible
+
+            if self.invincibility_timer <= 0:
+                self.is_invincible = False
+                self.blink_visible = True  # reset visibility
+
         # Additional player-specific update logic can go here
         self.x += self.momentum_x
         self.y += self.momentum_y
@@ -177,8 +203,8 @@ class Player(Entity):
         # Center the sprite on its position
         sprite_image = pygame.image.load(self.sprite)
         sprite_image = pygame.transform.scale(sprite_image, (self.width, self.height))
-        rotated_image = pygame.transform.rotate(sprite_image, self.direction)
-        rotated_rect = rotated_image.get_rect(
+        self.surface = pygame.transform.rotate(sprite_image, self.direction)
+        rotated_rect = self.surface.get_rect(
             center=(self.x + self.width // 2, self.y + self.height // 2)
         )
 
@@ -190,7 +216,9 @@ class Player(Entity):
             pygame.draw.rect(screen, (255, 0, 0), self.collision_rect, 1)
 
         # Draw the rotated sprite on the screen
-        screen.blit(rotated_image, rotated_rect.topleft)
+        if not self.is_invincible or self.blink_visible:
+            screen.blit(self.surface, rotated_rect.topleft)
+
         # Bullet manager draw
         self.bullet_manager.draw(screen)
 
@@ -242,18 +270,24 @@ class Player(Entity):
         self.momentum_y = 0
         self.direction = 0
 
-    def blip(self):
-        pass
-
     def take_damage(self) -> None:
         """Check player's lives and take action"""
         if self.lives < 1:
             print("Dead")
         else:
             # Reset player position to the center of the screen
+            if self.is_invincible:
+                return
+
             self.lives -= 1
             self.reset_position()
-            self.blip()
+            # Set invincibility timer
+            self.invincibility_timer = self.invincibility_duration
+
+        self.is_invincible = True
+        self.invincibility_timer = self.invincibility_duration
+        self.blink_visible = True
+        self.blink_timer = 0
 
     def __repr__(self) -> str:
         return f"Player(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', health={self.lives})"
