@@ -12,3 +12,6 @@ SHOOT_SOUND = pygame.mixer.Sound("assets/shoot.mp3")
 
 
 ASTEROID_SCORE_UP_EVENT = pygame.event.Event(pygame.USEREVENT + 1)
+
+# Spawn enemy event
+SPAWN_ENEMY_EVENT = pygame.event.Event(pygame.USEREVENT + 2)

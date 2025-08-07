@@ -179,9 +179,8 @@ class Player(Entity):
 
             if self.invincibility_timer <= 0:
                 self.is_invincible = False
-                self.blink_visible = True  # reset visibility
+                self.blink_visible = True
 
-        # Additional player-specific update logic can go here
         self.x += self.momentum_x
         self.y += self.momentum_y
 
@@ -236,10 +235,6 @@ class Player(Entity):
                 angle_rad = math.radians(self.direction + 90)
                 self.momentum_x += self.acceleration * math.cos(angle_rad)
                 self.momentum_y -= self.acceleration * math.sin(angle_rad)
-
-            # angle_rad = math.radians(self.direction + 90)
-            # self.momentum_x += self.acceleration * math.cos(angle_rad)
-            # self.momentum_y -= self.acceleration * math.sin(angle_rad)
 
         if keys[pygame.K_SPACE]:
             self.shoot()
@@ -314,8 +309,6 @@ class Asteroid(Entity):
         self.type = type
 
     def move(self):
-        # self.x += self.speed * math.cos(self.direction)
-        # self.y -= self.speed * math.cos(self.direction)
 
         # same speed but in the direction of the angle
         self.x += self.speed * math.cos(self.direction)
@@ -458,3 +451,110 @@ class AsteroidManager:
 
     def __repr__(self) -> str:
         return f"AsteroidManager(asteroids={self.asteroids})"
+
+
+# class Enemy(Entity):
+#     def __init__(
+#         self,
+#         x: int,
+#         y: int,
+#         width: int,
+#         height: int,
+#         sprite: str,
+#         speed: int = 2,
+#     ) -> None:
+#         super().__init__(x, y, width, height, sprite)
+#         self.speed = speed
+#         self.direction = random.randint(0, 360)
+
+#         self.bullet_manager = BulletsManager()
+#         self.collision_rect = pygame.Rect(x, y, width, height)
+#         self.debug_mode = False  # Flag for debug mode
+
+#         self.life = 1
+
+#     def update(self) -> None:
+#         """Update the enemy's position based on its speed and direction."""
+#         angle_rad = math.radians(self.direction)
+#         self.x += self.speed * math.cos(angle_rad)
+#         self.y -= self.speed * math.sin(angle_rad)
+#         self.collision_rect.topleft = (int(self.x), int(self.y))
+
+#     def draw(self, screen: pygame.Surface) -> None:
+#         """Draw the enemy on the screen."""
+#         sprite_image = pygame.image.load(self.sprite)
+#         sprite_image = pygame.transform.scale(sprite_image, (self.width, self.height))
+#         rotated_image = pygame.transform.rotate(sprite_image, self.direction)
+#         rotated_rect = rotated_image.get_rect(
+#             center=(self.x + self.width // 2, self.y + self.height // 2)
+#         )
+
+#         # Set the collision rectangle to the rotated position
+#         self.collision_rect = rotated_rect
+
+#         # Draw the rotated sprite on the screen
+#         screen.blit(rotated_image, rotated_rect.topleft)
+
+#     def shoot_at_player(self, player: Player) -> None:
+#         """Shoot a bullet at the player."""
+#         if random.random() < 0.01:
+#             direction_to_player = math.degrees(
+#                 math.atan2(player.y - self.y, player.x - self.x)
+#             )
+#             self.bullet_manager.shoot(
+#                 self.x + self.width // 2,
+#                 self.y + self.height // 2,
+#                 5,
+#                 5,
+#                 "./assets/bullet_enemy.png",
+#                 direction=int(direction_to_player),
+#             )
+#             SHOOT_SOUND.play()
+
+#     def check_collision(self, other: Entity) -> bool:
+#         return super().check_collision(other)
+
+#     def take_damage(self, bullet: Bullet) -> None:
+#         """Handle damage taken by the enemy."""
+#         if self.check_collision(bullet):
+#             if isinstance(bullet, Bullet):
+#                 self.life = 0
+
+#     def __repr__(self) -> str:
+#         return f"Enemy(x={self.x}, y={self.y}, width={self.width}, height={self.height}, sprite='{self.sprite}', speed={self.speed})"
+
+
+# class EnemyManager:
+#     def __init__(self, player: Player) -> None:
+#         self.enemies: list[Enemy] = []
+#         self.player = player
+
+#     def draw(self, surface: pygame.Surface):
+#         for enemy in self.enemies:
+#             enemy.draw(surface)
+
+#     def update(self):
+#         for enemy in self.enemies:
+#             enemy.update()
+#             enemy.shoot_at_player(self.player)
+
+#             if enemy.life < 1:
+#                 self.enemies.remove(enemy)
+
+#         # Remove enemies that are out of bounds
+#         self.enemies = [
+#             enemy
+#             for enemy in self.enemies
+#             if 0 <= enemy.x <= WINDOW_WIDTH and 0 <= enemy.y <= WINDOW_HEIGHT
+#         ]
+
+#     def spawn(self):
+#         """Spawn a new enemy at the specified position."""
+#         rand_x = random.randint(0, WINDOW_WIDTH - 20)
+#         rand_y = random.randint(0, WINDOW_HEIGHT - 20)
+#         rand_direction = random.randint(0, 360)
+
+#         self.enemies.append(Enemy(rand_x, rand_y, 50, 70, "assets/enemy1.png"))
+
+#     def __repr__(self) -> str:
+#         return f"EnemyManager(enemies={self.enemies})"

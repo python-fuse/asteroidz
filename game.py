@@ -2,7 +2,11 @@ import sys
 import pygame
 
 from entities import AsteroidManager, BulletsManager, Player
-from utils.constants import ASTEROID_SCORE_UP_EVENT, WINDOW_HEIGHT, WINDOW_WIDTH
+from utils.constants import (
+    ASTEROID_SCORE_UP_EVENT,
+    WINDOW_HEIGHT,
+    WINDOW_WIDTH,
+)
 from utils.ui import Button
 
 
@@ -16,7 +20,7 @@ pygame.display.set_caption("Azteroidz")
 
 class Game:
     def __init__(self) -> None:
-        # Initialize pygame the game window and clock
+        # Initialize pygame the game window and clockself.clock.get_fps()
         self.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.clock = pygame.time.Clock()
         self.fps = 60
@@ -29,6 +33,7 @@ class Game:
 
         # custome events
         pygame.time.set_timer(SPAWN_ASTEROID, SPAND_ASTEROID_DELAY)
+        # pygame.time.set_timer(SPAWN_ENEMY_EVENT, 3000)
 
         # Managers
 
@@ -76,7 +81,7 @@ class Game:
             ):
                 self.asteroids_manager.spawn(self.player)
 
-            if event.type == ASTEROID_SCORE_UP_EVENT.type:
+            if event == ASTEROID_SCORE_UP_EVENT:
                 self.score += 25
 
     def handle_input(self):
@@ -150,6 +155,13 @@ class Game:
 
         # Draw asteroids
         self.asteroids_manager.draw(self.window)
+
+        # # Draw the current fps
+        # fps_font = self.score_font.render(
+        #     str(math.ceil(self.clock.get_fps())), True, (255, 255, 255)
+        # )
+
+        # self.window.blit(fps_font, (WINDOW_WIDTH // 2, 0))
 
         # Draw player lives icon
         if self.player.lives <= 0:
